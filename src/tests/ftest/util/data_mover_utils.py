@@ -393,3 +393,52 @@ class FsCopy():
         self.log.info("Starting daos filesystem copy")
 
         return self.daos_cmd.filesystem_copy(src=self.src, dst=self.dst)
+
+class ContClone():
+    """Class defining an object of type ContClone.
+       Allows interfacing with daos container copy in a similar
+       manner to DcpCommand.
+    """
+
+    def __init__(self, daos_cmd, log):
+        """Create a ContClone object.
+
+        Args:
+            daos_cmd (DaosCommand): daos command to issue the cont clone
+                command.
+            log (TestLogger): logger to log messages
+
+        """
+        self.src = None
+        self.dst = None
+        self.daos_cmd = daos_cmd
+        self.log = log
+
+    def set_cont_clone_params(self, src=None, dst=None):
+        """Set the daos container clone params.
+
+        Args:
+            src (str, optional): the src, formatted as /<pool>/<cont>
+            dst (str, optional): the dst, formatted as /<pool>/<cont>
+
+        """
+        if src:
+            self.src = src
+        if dst:
+            self.dst = dst
+
+    def run(self):
+        # pylint: disable=arguments-differ
+        """Run the daos container clone command.
+
+        Returns:
+            CmdResult: Object that contains exit status, stdout, and other
+                information.
+
+        Raises:
+            CommandFailure: In case daos container clone run command fails.
+
+        """
+        self.log.info("Starting daos container clone")
+
+        return self.daos_cmd.container_clone(src=self.src, dst=self.dst)

@@ -8,7 +8,7 @@ from command_utils_base import CommandFailure
 from daos_utils import DaosCommand
 from ior_test_base import IorTestBase
 from mdtest_test_base import MdtestBase
-from data_mover_utils import Dcp, Dsync, FsCopy
+from data_mover_utils import Dcp, Dsync, FsCopy, ContClone
 from os.path import join
 import uuid
 
@@ -38,7 +38,7 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
     PARAM_TYPES = ("POSIX", "DAOS_UUID", "DAOS_UNS")
 
     # The valid datamover tools that can be used
-    TOOLS = ("DCP", "DSYNC", "FS_COPY")
+    TOOLS = ("DCP", "DSYNC", "FS_COPY", "CONT_CLONE")
 
     def __init__(self, *args, **kwargs):
         """Initialize a DataMoverTestBase object."""
@@ -48,6 +48,7 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
         self.dcp_cmd = None
         self.dsync_cmd = None
         self.fs_copy_cmd = None
+        self.cont_clone_cmd = None
         self.ior_processes = None
         self.mdtest_processes = None
         self.dcp_processes = None
@@ -352,6 +353,8 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
             self.set_dsync_params(*args, **kwargs)
         elif self.tool == "FS_COPY":
             self.set_fs_copy_params(*args, **kwargs)
+        elif self.tool == "CONT_CLONE":
+            self.set_cont_clone_params(*args, **kwargs)
         else:
             self.fail("Invalid tool: {}".format(str(self.tool)))
 
@@ -589,6 +592,47 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
             self.fs_copy_cmd.set_fs_copy_params(
                 dst=path)
 
+    def set_cont_clone_params(self,
+                              src_type=None, src_path=None,
+                              src_pool=None, src_cont=None,
+                              dst_type=None, dst_path=None,
+                              dst_pool=None, dst_cont=None):
+        """Set the params for daos cont clone.
+
+        This only supports DAOS -> DAOS copies.
+
+        Args:
+            src_type (str, None): compatibility placeholder. Not used.
+            src_path (str, None): compatibility placeholder. Not used.
+            src_pool (TestPool, optional): the source pool.
+                Alternatively, this can the pool uuid.
+            src_cont (TestContainer, optional): the source container.
+                Alternatively, this can be the container uuid.
+            dst_type (str, None): compatibility placeholder. Not used.
+            dst_path (str, None): compatibility placeholder. Not used.
+            dst_pool (TestPool, optional): the destination pool.
+                Alternatively, this can the pool uuid.
+            dst_cont (TestContainer, optional): the destination container.
+                Alternatively, this can be the container uuid.
+
+        """
+        # First, initialize a new cont copy command
+        self.cont_clone_cmd = ContClone(self.daos_cmd, self.log)
+
+        # Set the source params
+        if src_pool or src_cont:
+             pool_uuid = self._uuid_from_obj(src_pool)
+             cont_uuid = self._uuid_from_obj(src_cont)
+             self.cont_clone_cmd.set_cont_clone_params(
+                src="/{}/{}".format(pool_uuid, cont_uuid))
+
+        # Set the destination params
+        if dst_pool or dst_cont:
+             pool_uuid = self._uuid_from_obj(dst_pool)
+             cont_uuid = self._uuid_from_obj(dst_cont)
+             self.cont_clone_cmd.set_cont_clone_params(
+                dst="/{}/{}".format(pool_uuid, cont_uuid))
+
     def set_ior_params(self, param_type, path, pool=None, cont=None,
                        path_suffix=None, flags=None, display=True):
         """Set the ior params.
@@ -621,7 +665,7 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
         display_test_file = "test_file" if display else None
 
         # Allow cont to be either the container or the uuid
-        cont_uuid = cont.uuid if hasattr(cont, "uuid") else cont
+        cont_uuid = self._uuid_from_obj(cont)
 
         # Optionally append suffix
         if path_suffix:
@@ -690,7 +734,7 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
         display_test_dir = "test_dir" if display else None
 
         # Allow cont to be either the container or the uuid
-        cont_uuid = cont.uuid if hasattr(cont, "uuid") else cont
+        cont_uuid =self. _uuid_from_obj(cont)
 
         if param_type == "POSIX":
             self.mdtest_cmd.api.update("POSIX", display_api)
@@ -794,6 +838,8 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
                 result = self.dsync_cmd.run(self.workdir, processes)
             elif self.tool == "FS_COPY":
                 result = self.fs_copy_cmd.run()
+            elif self.tool == "CONT_CLONE":
+                result = self.cont_clone_cmd.run()
             else:
                 self.fail("Invalid tool: {}".format(str(self.tool)))
         except CommandFailure as error:
