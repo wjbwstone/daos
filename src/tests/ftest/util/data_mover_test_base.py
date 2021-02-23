@@ -6,11 +6,14 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 """
 from command_utils_base import CommandFailure
 from daos_utils import DaosCommand
+from test_utils_container import TestContainer
+from pydaos.raw import str_to_c_uuid, c_uuid, DaosContainer
 from ior_test_base import IorTestBase
 from mdtest_test_base import MdtestBase
 from data_mover_utils import Dcp, Dsync, FsCopy
 from os.path import join
 import uuid
+import ctypes
 
 
 class DataMoverTestBase(IorTestBase, MdtestBase):
@@ -324,6 +327,33 @@ class DataMoverTestBase(IorTestBase, MdtestBase):
 
         # Create container
         container.create()
+
+        # Save container and uuid
+        self.container.append(container)
+        self.uuids.append(str(container.uuid))
+
+        return container
+
+    def get_cont(self, pool, cont_uuid):
+        """Get an existing container.
+
+        Args:
+            pool (TestPool): pool to open the container in.
+            cont_uuid (str): container uuid.
+
+        Returns:
+            TestContainer: the container object
+
+        """
+        # Open the container
+        # Create a TestContainer instance
+        container = TestContainer(pool, daos_command=self.get_daos_command())
+
+        # Create the underlying DaosContainer instance
+        container.container = DaosContainer(pool.context)
+        container.container.uuid = str_to_c_uuid(cont_uuid)
+        container.uuid = container.container.get_uuid_str()
+        container.container.poh = pool.pool.handle
 
         # Save container and uuid
         self.container.append(container)
