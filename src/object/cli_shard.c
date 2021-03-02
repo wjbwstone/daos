@@ -573,9 +573,12 @@ dc_shard_csum_report(tse_task_t *task, crt_rpc_t *rpc)
 	crt_req_addref(csum_rpc);
 	crt_req_addref(rpc);
 	rc = crt_req_send(csum_rpc, csum_report_cb, rpc);
-	if (rc != 0)
+	if (rc != 0) {
+		crt_req_decref(csum_rpc);
+		crt_req_decref(rpc);
 		D_ERROR("Fail to send csum report, rpc %p, "DF_RC"\n",
 			rpc, DP_RC(rc));
+	}
 
 	return rc;
 }
@@ -1202,6 +1205,7 @@ dc_obj_shard_punch(struct dc_obj_shard *shard, enum obj_rpc_opc opc,
 	return 0;
 
 out_req:
+	crt_req_decref(req);
 	crt_req_decref(req);
 out:
 	if (pool != NULL)
@@ -2042,6 +2046,7 @@ dc_obj_shard_query_key(struct dc_obj_shard *shard, struct dtx_epoch *epoch,
 
 out_req:
 	crt_req_decref(req);
+	crt_req_decref(req);
 out:
 	if (pool)
 		dc_pool_put(pool);
@@ -2167,6 +2172,7 @@ dc_obj_shard_sync(struct dc_obj_shard *shard, enum obj_rpc_opc opc,
 	return 0;
 
 out_req:
+	crt_req_decref(req);
 	crt_req_decref(req);
 
 out:

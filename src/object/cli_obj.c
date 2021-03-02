@@ -2764,7 +2764,7 @@ shard_list_task_fini(tse_task_t *task, void *arg)
 	shard_arg->la_recxs = NULL;
 	shard_arg->la_kds = NULL;
 	if (shard_arg->la_sgl != NULL && shard_arg->la_sgl != obj_arg->sgl)
-		d_sgl_fini(shard_arg->la_sgl, false);
+		d_sgl_fini(shard_arg->la_sgl, true);
 
 	return 0;
 }
@@ -4327,7 +4327,7 @@ obj_shard_list_fini(daos_obj_list_t *obj_args,
 		    struct shard_list_args *shard_arg)
 {
 	if (shard_arg->la_sgl && shard_arg->la_sgl != obj_args->sgl) {
-		d_sgl_fini(shard_arg->la_sgl, false);
+		d_sgl_fini(shard_arg->la_sgl, true);
 		D_FREE(shard_arg->la_sgl);
 	}
 	shard_arg->la_kds = NULL;

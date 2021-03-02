@@ -71,7 +71,6 @@ dc_mgmt_get_bs_state(tse_task_t *task)
 	struct mgmt_get_bs_state_arg	 cb_args;
 	int				 rc;
 
-
 	args = dc_task_get_args(task);
 
 	rc = dc_mgmt_sys_attach(args->grp, &cb_args.sys);
@@ -113,7 +112,10 @@ dc_mgmt_get_bs_state(tse_task_t *task)
 		args->grp);
 
 	/** send the request */
-	return daos_rpc_send(rpc_req, task);
+	rc = daos_rpc_send(rpc_req, task);
+	if (rc != 0)
+		D_GOTO(out_put_req, rc);
+	return rc;
 
 out_put_req:
 	crt_req_decref(rpc_req);

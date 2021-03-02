@@ -892,6 +892,7 @@ dc_array_close(tse_task_t *task)
 	if (rc != 0) {
 		D_ERROR("Failed to register completion cb "DF_RC"\n",
 			DP_RC(rc));
+		array_decref(array);
 		D_GOTO(err_put2, rc);
 	}
 
@@ -1239,18 +1240,18 @@ next:
 static int
 set_short_read_cb(tse_task_t *task, void *data)
 {
-	struct hole_params	*params;
+	struct hole_params	*params = daos_task_get_priv(task);
 	daos_array_io_t		*args;
 	int			i;
 	int			rc = task->dt_result;
 
+	D_ASSERT(params != NULL);
+
 	if (rc != 0) {
 		D_ERROR("Failed to get array size "DF_RC"\n", DP_RC(rc));
-		return rc;
+		goto out;
 	}
 
-	params = daos_task_get_priv(task);
-	D_ASSERT(params != NULL);
 	args = daos_task_get_args(params->ptask);
 	D_ASSERT(args);
 
@@ -1275,11 +1276,9 @@ set_short_read_cb(tse_task_t *task, void *data)
 
 	/** memset holes to 0 */
 	rc = process_iomap(params, args);
-	if (rc)
-		return rc;
-
+out:
 	D_FREE(params);
-	return 0;
+	return rc;
 }
 
 static int
@@ -1297,7 +1296,7 @@ check_short_read_cb(tse_task_t *task, void *data)
 
 	if (rc != 0) {
 		D_ERROR("Array Read Failed "DF_RC"\n", DP_RC(rc));
-		return rc;
+		D_GOTO(err_params, rc);
 	}
 
 	D_ASSERT(params);
@@ -1383,11 +1382,8 @@ next:
 		params->array_size = UINT64_MAX;
 		rc = process_iomap(params, args);
 		if (rc)
-			return rc;
-
-		tse_task_complete(task, 0);
-		D_FREE(params);
-		return 0;
+			D_GOTO(err_params, rc);
+		D_GOTO(err_params, rc = 0);
 	}
 
 	/** Schedule the get size to properly check for short reads */

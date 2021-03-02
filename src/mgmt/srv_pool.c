@@ -162,6 +162,8 @@ ds_mgmt_tgt_pool_create_ranks(uuid_t pool_uuid, char *tgt_dev,
 		D_DEBUG(DB_TRACE, "fill ranks %d idx %d "DF_UUID"\n",
 			tc_out_ranks[i], idx, DP_UUID(tc_out_uuids[i]));
 	}
+	D_FREE(tc_out->tc_tgt_uuids.ca_arrays);
+	D_FREE(tc_out->tc_ranks.ca_arrays);
 
 	rc = DER_SUCCESS;
 
@@ -358,7 +360,6 @@ ds_mgmt_pool_extend(uuid_t pool_uuid, d_rank_list_t *svc_ranks,
 		    d_rank_list_t *rank_list,
 		    char *tgt_dev,  size_t scm_size, size_t nvme_size)
 {
-	d_rank_list_t			*unique_add_ranks = NULL;
 	uuid_t				*tgt_uuids = NULL;
 	int				doms[rank_list->rl_nr];
 	int				ntargets;
@@ -366,10 +367,6 @@ ds_mgmt_pool_extend(uuid_t pool_uuid, d_rank_list_t *svc_ranks,
 	int				rc;
 
 	D_DEBUG(DB_MGMT, "extend pool "DF_UUID"\n", DP_UUID(pool_uuid));
-
-	rc = d_rank_list_dup_sort_uniq(&unique_add_ranks, rank_list);
-	if (rc != 0)
-		D_GOTO(out, rc);
 
 	rc = ds_mgmt_tgt_pool_create_ranks(pool_uuid, tgt_dev, rank_list,
 					   scm_size, nvme_size, &tgt_uuids);
@@ -389,9 +386,7 @@ ds_mgmt_pool_extend(uuid_t pool_uuid, d_rank_list_t *svc_ranks,
 			    ARRAY_SIZE(doms), doms, svc_ranks);
 
 out:
-	if (unique_add_ranks != NULL)
-		d_rank_list_free(unique_add_ranks);
-
+	D_FREE(tgt_uuids);
 	return rc;
 }
 

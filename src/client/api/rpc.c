@@ -39,11 +39,6 @@ daos_rpc_send(crt_rpc_t *rpc, tse_task_t *task)
 	int rc;
 
 	rc = crt_req_send(rpc, daos_rpc_cb, task);
-	if (rc != 0) {
-		/** task will be completed in CB above */
-		rc = 0;
-	}
-
 	return rc;
 }
 

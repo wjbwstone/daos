@@ -729,7 +729,7 @@ dss_enum_unpack_io_clear(struct dss_enum_unpack_io *io)
 
 	for (i = 0; i <= io->ui_iods_top; i++) {
 		if (io->ui_sgls != NULL)
-			d_sgl_fini(&io->ui_sgls[i], false);
+			d_sgl_fini(&io->ui_sgls[i], true);
 
 		clear_iod_csum(io_iod_csums(io, i));
 
@@ -775,7 +775,7 @@ clear_top_iod(struct dss_enum_unpack_io *io)
 		D_DEBUG(DB_IO, "iod without recxs: %d\n", idx);
 
 		if (io->ui_sgls != NULL)
-			d_sgl_fini(&io->ui_sgls[idx], false);
+			d_sgl_fini(&io->ui_sgls[idx], true);
 
 		clear_iod_csum(io_iod_csums(io, idx));
 

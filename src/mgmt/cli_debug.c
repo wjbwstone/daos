@@ -77,9 +77,13 @@ dc_debug_set_params(tse_task_t *task)
 		args->key_id, args->value);
 
 	/** send the request */
-	return daos_rpc_send(rpc, task);
+	rc = daos_rpc_send(rpc, task);
+	if (rc != 0)
+		D_GOTO(err_rpc, rc);
+	return rc;
 
 err_rpc:
+	crt_req_decref(rpc);
 	crt_req_decref(rpc);
 err_grp:
 	dc_mgmt_sys_detach(cp_arg.sys);

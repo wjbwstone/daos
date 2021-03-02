@@ -2390,8 +2390,10 @@ vos_dtx_cmt_reindex(daos_handle_t coh, void *hint)
 		d_iov_set(&riov, dce, sizeof(*dce));
 		rc = dbtree_upsert(cont->vc_dtx_committed_hdl, BTR_PROBE_EQ,
 				   DAOS_INTENT_UPDATE, &kiov, &riov);
-		if (rc != 0)
+		if (rc != 0) {
+			D_FREE(dce);
 			goto out;
+		}
 
 		/* The committed DTX entry is already in the index.
 		 * Related re-index logic can stop.

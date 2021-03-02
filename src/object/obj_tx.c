@@ -1783,12 +1783,9 @@ dc_tx_commit_trigger(tse_task_t *task, struct dc_tx *tx, daos_tx_commit_t *args)
 	rc = tse_task_register_comp_cb(task, dc_tx_commit_cb,
 				       &tcca, sizeof(tcca));
 	if (rc != 0) {
-		/* drop ref from crt_req_addref. */
-		crt_req_decref(req);
 		D_ERROR("Failed to register completion cb: "DF_RC"\n",
 			DP_RC(rc));
-
-		D_GOTO(out, rc);
+		D_GOTO(out_req, rc);
 	}
 
 	oci = crt_req_get(req);
@@ -1814,25 +1811,22 @@ dc_tx_commit_trigger(tse_task_t *task, struct dc_tx *tx, daos_tx_commit_t *args)
 	D_MUTEX_UNLOCK(&tx->tx_lock);
 
 	rc = daos_rpc_send(req, task);
-	if (rc != 0)
+	if (rc != 0) {
+		D_MUTEX_LOCK(&tx->tx_lock);
 		D_ERROR("CPD RPC failed rc "DF_RC"\n", DP_RC(rc));
+		D_GOTO(out_req, rc);
+	}
 
 	return rc;
 
+out_req:
+	crt_req_decref(req);
+	crt_req_decref(req);
 out:
-	if (req != NULL)
-		crt_req_decref(req);
-
 	if (rc == -DER_TX_RESTART)
 		tx->tx_status = TX_FAILED;
 	else if (rc != 0)
 		tx->tx_status = TX_ABORTED;
-
-	D_MUTEX_UNLOCK(&tx->tx_lock);
-	/* -1 for dc_tx_commit() held */
-	dc_tx_decref(tx);
-	tse_task_complete(task, rc);
-
 	return rc;
 }
 
@@ -1859,12 +1853,12 @@ dc_tx_commit(tse_task_t *task)
 		D_GOTO(out_tx, rc = -DER_ALREADY);
 
 	if (tx->tx_status == TX_COMMITTING &&
-	    !(tx->tx_retry && args->flags & DTF_RETRY_COMMIT))
+	    !(tx->tx_retry && (args->flags & DTF_RETRY_COMMIT)))
 		D_GOTO(out_tx, rc = -DER_INPROGRESS);
 
 	if (tx->tx_status != TX_OPEN &&
 	    !(tx->tx_status == TX_COMMITTING &&
-	      tx->tx_retry && args->flags & DTF_RETRY_COMMIT)) {
+	      tx->tx_retry && (args->flags & DTF_RETRY_COMMIT))) {
 		D_ERROR("Can't commit non-open state TX (%d)\n",
 			tx->tx_status);
 		D_GOTO(out_tx, rc = -DER_NO_PERM);
@@ -1875,7 +1869,10 @@ dc_tx_commit(tse_task_t *task)
 		D_GOTO(out_tx, rc = 0);
 	}
 
-	return dc_tx_commit_trigger(task, tx, args);
+	rc = dc_tx_commit_trigger(task, tx, args);
+	if (rc)
+		D_GOTO(out_tx, rc);
+	return rc;
 
 out_tx:
 	D_MUTEX_UNLOCK(&tx->tx_lock);
