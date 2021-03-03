@@ -111,11 +111,7 @@ dc_mgmt_get_bs_state(tse_task_t *task)
 	D_DEBUG(DB_MGMT, "getting internal blobstore state in DAOS system:%s\n",
 		args->grp);
 
-	/** send the request */
-	rc = daos_rpc_send(rpc_req, task);
-	if (rc != 0)
-		D_GOTO(out_put_req, rc);
-	return rc;
+	return daos_rpc_send(rpc_req, task);
 
 out_put_req:
 	crt_req_decref(rpc_req);

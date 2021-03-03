@@ -709,7 +709,7 @@ crt_rpc_handler_common(hg_handle_t hg_hdl)
 		D_GOTO(out, hg_ret = HG_PROTOCOL_ERROR);
 	}
 
-	crt_ctx = (struct crt_context *)HG_Context_get_data(hg_info->context);
+	crt_ctx = HG_Context_get_data(hg_info->context);
 	if (crt_ctx == NULL) {
 		D_ERROR("HG_Context_get_data failed.\n");
 		D_GOTO(out, hg_ret = HG_PROTOCOL_ERROR);
@@ -784,10 +784,11 @@ crt_rpc_handler_common(hg_handle_t hg_hdl)
 	rc = crt_rpc_priv_init(rpc_priv, crt_ctx, true /* srv_flag */);
 	if (rc != 0) {
 		D_ERROR("crt_rpc_priv_init rc=%d, opc=%#x\n", rc, opc);
-		crt_hg_reply_error_send(rpc_priv, -DER_MISC);
+		crt_hg_reply_error_send(&rpc_tmp, -DER_MISC);
 		crt_hg_unpack_cleanup(proc);
-		HG_Destroy(rpc_priv->crp_hg_hdl);
-		D_GOTO(decref, hg_ret = HG_SUCCESS);
+		HG_Destroy(rpc_tmp.crp_hg_hdl);
+		D_FREE(rpc_priv);
+		D_GOTO(out, hg_ret = HG_SUCCESS);
 	}
 
 	D_ASSERT(rpc_priv->crp_srv != 0);
@@ -805,7 +806,6 @@ crt_rpc_handler_common(hg_handle_t hg_hdl)
 			D_ERROR("_unpack_body failed, rc: %d, opc: %#x.\n",
 				rc, rpc_pub->cr_opc);
 			crt_hg_reply_error_send(rpc_priv, -DER_MISC);
-			HG_Destroy(rpc_priv->crp_hg_hdl);
 			D_GOTO(decref, hg_ret = HG_SUCCESS);
 		}
 	} else {
@@ -815,13 +815,11 @@ crt_rpc_handler_common(hg_handle_t hg_hdl)
 	if (opc_info->coi_rpc_cb == NULL) {
 		D_ERROR("NULL crp_hg_hdl, opc: %#x.\n", opc);
 		crt_hg_reply_error_send(rpc_priv, -DER_UNREG);
-		HG_Destroy(rpc_priv->crp_hg_hdl);
 		D_GOTO(decref, hg_ret = HG_SUCCESS);
 	}
 
 	if (rpc_priv->crp_fail_hlc) {
 		crt_hg_reply_error_send(rpc_priv, -DER_HLC_SYNC);
-		HG_Destroy(rpc_priv->crp_hg_hdl);
 		D_GOTO(decref, hg_ret = HG_SUCCESS);
 	}
 
@@ -834,7 +832,6 @@ crt_rpc_handler_common(hg_handle_t hg_hdl)
 			  "failed to invoke RPC handler, rc: %d, opc: %#x\n",
 			  rc, opc);
 		crt_hg_reply_error_send(rpc_priv, rc);
-		HG_Destroy(rpc_priv->crp_hg_hdl);
 		D_GOTO(decref, hg_ret = HG_SUCCESS);
 	}
 
