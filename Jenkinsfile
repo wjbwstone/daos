@@ -892,12 +892,13 @@ pipeline {
                                                 ' --build-arg QUICKBUILD_DEPS="' +
                                                 quick_build_deps('centos7') + '"' +
                                                 ' --build-arg REPOS="' + pr_repos() + '"'
-			    args '--tmpfs /mnt/daos'
+                            args '--tmpfs /mnt/daos_tmp'
                         }
                     }
                     steps {
+                        sh """ls -ld /mnt/daos; id"""
                         sconsBuild parallel_build: parallel_build(),
-                                   scons_args: "PREFIX=/opt/daos TARGET_TYPE=release BUILD_ROOT=/mnt/daos",
+                                   scons_args: "PREFIX=/opt/daos TARGET_TYPE=release BUILD_ROOT=/mnt/daos_tmp",
                                    build_deps: "no"
                     }
                     post {
@@ -930,7 +931,7 @@ pipeline {
                                                 " -t ${sanitized_JOB_NAME}-centos7 " +
                                                 ' --build-arg QUICKBUILD_DEPS="' +
                                                 quick_build_deps('centos7') + '"'
-			    args '--tmpfs /mnt/daos'
+                            args '--tmpfs /mnt/daos'
                         }
                     }
                     steps {
