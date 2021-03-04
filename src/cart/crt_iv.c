@@ -2720,7 +2720,6 @@ handle_response_cb_internal(void *arg)
 static void
 handle_response_cb(const struct crt_cb_info *cb_info)
 {
-	void			*cb_info2 = (void *)cb_info;
 	crt_rpc_t		*rpc = cb_info->cci_rpc;
 	struct crt_rpc_priv	*rpc_priv;
 	struct crt_context	*crt_ctx;
@@ -2758,8 +2757,7 @@ handle_response_cb(const struct crt_cb_info *cb_info)
 		return;
 	}
 callback:
-	handle_response_internal(cb_info2);
-	D_FREE(cb_info2);
+	handle_response_internal((void *)cb_info);
 }
 
 /* bulk transfer update callback info */
