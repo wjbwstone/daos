@@ -145,11 +145,8 @@ ds_obj_remote_update(struct dtx_leader_handle *dlh, void *data, int idx,
 	D_DEBUG(DB_TRACE, DF_UOID" forwarding to rank:%d tag:%d.\n",
 		DP_UOID(orw->orw_oid), tgt_ep.ep_rank, tgt_ep.ep_tag);
 	rc = crt_req_send(req, shard_update_req_cb, remote_arg);
-	if (rc != 0) {
+	if (rc != 0)
 		D_ERROR("crt_req_send failed, rc "DF_RC"\n", DP_RC(rc));
-		crt_req_decref(req);
-		D_GOTO(out, rc);
-	}
 	return rc;
 
 out:
@@ -260,12 +257,8 @@ ds_obj_remote_punch(struct dtx_leader_handle *dlh, void *data, int idx,
 		DP_UOID(opi->opi_oid), tgt_ep.ep_rank, tgt_ep.ep_tag);
 
 	rc = crt_req_send(req, shard_punch_req_cb, remote_arg);
-	if (rc != 0) {
+	if (rc != 0)
 		D_ERROR("crt_req_send failed, rc "DF_RC"\n", DP_RC(rc));
-		crt_req_decref(req);
-		D_GOTO(out, rc);
-	}
-
 	return rc;
 
 out:
@@ -514,10 +507,8 @@ ds_obj_cpd_dispatch(struct dtx_leader_handle *dlh, void *arg, int idx,
 		tgt_ep.ep_rank, tgt_ep.ep_tag, idx, DP_DTI(&dcsh->dcsh_xid));
 
 	rc = crt_req_send(req, shard_cpd_req_cb, remote_arg);
-	if (rc != 0) {
+	if (rc != 0)
 		D_ERROR("crt_req_send failed, rc "DF_RC"\n", DP_RC(rc));
-		D_GOTO(out, rc);
-	}
 
 	D_CDEBUG(rc != 0, DLOG_ERR, DB_TRACE,
 		 "Forwarded CPD RPC to rank:%d tag:%d idx %u for DXT "

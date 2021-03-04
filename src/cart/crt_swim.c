@@ -355,12 +355,8 @@ static int crt_swim_send_message(struct swim_context *ctx, swim_id_t to,
 		      "sending opc %#x with %zu updates %lu => %lu\n",
 		      opc, nupds, self_id, to);
 
-	rc = crt_req_send(rpc_req, crt_swim_cli_cb, ctx);
-	if (rc) {
-		D_TRACE_ERROR(rpc_req, "crt_req_send() failed "DF_RC"\n",
-			      DP_RC(rc));
-		D_GOTO(out, rc);
-	}
+	return crt_req_send(rpc_req, crt_swim_cli_cb, ctx);
+
 out:
 	if (rc && rpc_req != NULL)
 		crt_req_decref(rpc_req);

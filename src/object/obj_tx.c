@@ -1810,14 +1810,7 @@ dc_tx_commit_trigger(tse_task_t *task, struct dc_tx *tx, daos_tx_commit_t *args)
 	tx->tx_status = TX_COMMITTING;
 	D_MUTEX_UNLOCK(&tx->tx_lock);
 
-	rc = daos_rpc_send(req, task);
-	if (rc != 0) {
-		D_MUTEX_LOCK(&tx->tx_lock);
-		D_ERROR("CPD RPC failed rc "DF_RC"\n", DP_RC(rc));
-		D_GOTO(out_req, rc);
-	}
-
-	return rc;
+	return daos_rpc_send(req, task);
 
 out_req:
 	crt_req_decref(req);
