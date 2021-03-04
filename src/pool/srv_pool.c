@@ -4586,7 +4586,6 @@ out:
 		DP_UUID(in->pti_op.pi_uuid), rpc, DP_RC(rc));
 	crt_reply_send(rpc);
 	pool_target_addr_list_free(&inval_list_out);
-	pool_target_addr_list_free(&list);
 }
 
 int
